@@ -3,10 +3,10 @@ import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableConta
 import { Delete, Add, UploadFile, Group } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { apiService } from '../apiService';
-import { Department, Member } from '../types';
+import { DepartmentWithMembers, Member } from '../types';
 
 export default function DepartmentManagePage() {
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<DepartmentWithMembers[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedDept, setSelectedDept] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function DepartmentManagePage() {
     setLoading(true);
     const res = await apiService.getDepartments(true);
     if (res.success && res.data) {
-      setDepartments(res.data as Department[]);
+      setDepartments(res.data as DepartmentWithMembers[]);
     }
     setLoading(false);
   };
@@ -41,7 +41,7 @@ export default function DepartmentManagePage() {
 
   const handleAddDept = async () => {
     if (!newDeptName.trim()) return;
-    const res = await apiService.addDepartment(newDeptName);
+    const res = await apiService.createDepartment(newDeptName);
     if (res.success) {
       fetchDepartments();
       setOpenDeptDialog(false);
@@ -64,11 +64,11 @@ export default function DepartmentManagePage() {
 
   const handleAddMember = async () => {
     if (!newMemberName.trim() || !selectedDept) return;
-    const res = await apiService.addMember(selectedDept, newMemberName);
+    const res = await apiService.addMember(selectedDept, { name: newMemberName });
     if (res.success) {
       fetchDepartments();
       // Update local members list for immediate UI feedback
-      setMembers([...members, { id: Date.now(), name: newMemberName, department_id: selectedDept }]);
+      setMembers([...members, { id: Date.now(), name: newMemberName, department_id: selectedDept, is_active: true }]);
       setOpenMemberDialog(false);
       setNewMemberName('');
     }
@@ -104,7 +104,7 @@ export default function DepartmentManagePage() {
 
       if (formattedData.length > 0) {
         setLoading(true);
-        const res = await apiService.uploadExcelData(formattedData);
+        const res = await apiService.bulkUploadDepartments({ rows: formattedData, create_missing_departments: true });
         if (res.success) {
           alert('데이터 업로드가 완료되었습니다.');
           fetchDepartments();

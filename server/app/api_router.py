@@ -10,7 +10,7 @@ from app.models import (
 )
 from app.repository import AttendanceRepository
 from app.service import AttendanceService
-from dto import (
+from app.dto import (
     DepartmentWithMembersDto, BulkUploadResultDto, AttendanceListDto,
     WeeklyDashboardDto, MonthlyDashboardDto, AttendanceByDepartmentDto, RankingByDateDto
 )
