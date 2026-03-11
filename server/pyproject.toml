@@ -1,0 +1,20 @@
+[project]
+name = "attandance"
+version = "1.0.0"
+description = ""
+authors = [{ name = "gyeomii"}]
+readme = "README.md"
+requires-python ="==3.11.9"
+
+dependencies = [
+    "uvicorn",
+    "sqlmodel",
+    "sqlalchemy",
+    "pydantic",
+    "pydantic-core",
+    "pydantic-settings",
+    "typing-extensions",
+    "black",
+    "isort",
+    "fastapi[standard]",
+]
