@@ -86,3 +86,14 @@ class AttendanceMarkRequest(BaseModel):
     member_id: int
     department_id: int
     present: bool
+
+
+class AttendanceBulkRow(BaseModel):
+    date: str
+    schedule_type: ScheduleType
+    department_name: str
+    member_name: str
+
+
+class AttendanceBulkUploadRequest(BaseModel):
+    rows: List[AttendanceBulkRow]
