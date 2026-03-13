@@ -3,14 +3,14 @@ from sqlmodel import Session
 from typing import List
 from datetime import date
 
-from app.database import get_session
-from app.models import (
+from .database import get_session
+from .models import (
     APIResponse, DepartmentCreate, MemberCreateRequest, DepartmentBulkUploadRequest,
     AttendanceMarkRequest, ScheduleType, Department, Member, AttendanceRecord
 )
-from app.repository import AttendanceRepository
-from app.service import AttendanceService
-from app.dto import (
+from .repository import AttendanceRepository
+from .service import AttendanceService
+from .dto import (
     DepartmentWithMembersDto, BulkUploadResultDto, AttendanceListDto,
     WeeklyDashboardDto, MonthlyDashboardDto, AttendanceByDepartmentDto, RankingByDateDto
 )

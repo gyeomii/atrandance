@@ -2,7 +2,7 @@ from sqlmodel import Session, select
 from sqlalchemy import func
 from datetime import date
 from typing import List, Dict, Tuple, Optional
-from app.models import Department, Member, Schedule, AttendanceRecord, AttendanceStatus, ScheduleType
+from .models import Department, Member, Schedule, AttendanceRecord, AttendanceStatus, ScheduleType
 
 class AttendanceRepository:
     def __init__(self, session: Session):

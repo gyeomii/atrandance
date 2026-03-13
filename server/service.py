@@ -3,13 +3,13 @@ from datetime import date, datetime, timezone
 from typing import List
 from fastapi import HTTPException
 
-from app.models import (
+from .models import (
     Department, Member, Schedule, AttendanceRecord, AttendanceStatus,
     ScheduleType, AttendanceMarkRequest, DepartmentCreate,
     MemberCreateRequest, DepartmentBulkUploadRequest
 )
-from app.repository import AttendanceRepository
-from app.dto import (
+from .repository import AttendanceRepository
+from .dto import (
     DepartmentWithMembersDto, DepartmentMemberDto, BulkUploadResultDto,
     AttendanceListDto, ScheduleDto, AttendanceMemberDto, DailyStatsDto,
     DepartmentStatsDto, TotalStatsDto, WeeklyDashboardDto, DateRangeDto,

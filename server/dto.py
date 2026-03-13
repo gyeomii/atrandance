@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
-from app.models import ScheduleType
+from .models import ScheduleType
 
 # --- Common DTOs ---
 class DateRangeDto(BaseModel):
