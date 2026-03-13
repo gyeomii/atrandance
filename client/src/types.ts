@@ -18,6 +18,7 @@ export interface Member {
   department_id: number;
   name: string;
   is_active: boolean;
+  gender?: string;
 }
 
 export interface DepartmentWithMembers extends Department {
@@ -29,6 +30,7 @@ export type DepartmentListResponse = ApiResponse<(Department | DepartmentWithMem
 export interface DepartmentBulkUploadRow {
   department_name: string;
   member_name: string;
+  gender?: string;
 }
 
 export interface DepartmentBulkUploadRequest {
@@ -46,6 +48,7 @@ export type DepartmentBulkUploadResponse = ApiResponse<DepartmentBulkUploadResul
 
 export interface MemberCreateRequest {
   name: string;
+  gender?: string;
 }
 
 export type MemberResponse = ApiResponse<Member>;

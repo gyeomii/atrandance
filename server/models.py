@@ -32,6 +32,7 @@ class Member(SQLModel, table=True):
     department_id: int = Field(foreign_key="department.id")
     name: str
     is_active: bool = Field(default=True)
+    gender: Optional[str] = Field(default=None)
     department: Optional[Department] = Relationship(back_populates="members")
 
 
@@ -66,11 +67,13 @@ class DepartmentCreate(BaseModel):
 
 class MemberCreateRequest(BaseModel):
     name: str
+    gender: Optional[str] = None
 
 
 class DepartmentBulkRow(BaseModel):
     department_name: str
     member_name: str
+    gender: Optional[str] = None
 
 
 class DepartmentBulkUploadRequest(BaseModel):

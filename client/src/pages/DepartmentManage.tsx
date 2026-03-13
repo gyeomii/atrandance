@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, CircularProgress, Chip, Avatar } from '@mui/material';
-import { Delete, Add, UploadFile, Group } from '@mui/icons-material';
+import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, CircularProgress, Chip, Avatar, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Delete, Add, UploadFile, Group, Download } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { apiService } from '../apiService';
 import { DepartmentWithMembers, Member } from '../types';
@@ -17,6 +17,7 @@ export default function DepartmentManagePage() {
   
   const [openMemberDialog, setOpenMemberDialog] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberGender, setNewMemberGender] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDepartments();
@@ -64,13 +65,14 @@ export default function DepartmentManagePage() {
 
   const handleAddMember = async () => {
     if (!newMemberName.trim() || !selectedDept) return;
-    const res = await apiService.addMember(selectedDept, { name: newMemberName });
+    const res = await apiService.addMember(selectedDept, { name: newMemberName, gender: newMemberGender ?? undefined });
     if (res.success) {
       fetchDepartments();
       // Update local members list for immediate UI feedback
-      setMembers([...members, { id: Date.now(), name: newMemberName, department_id: selectedDept, is_active: true }]);
+      setMembers([...members, { id: -Date.now(), name: newMemberName, department_id: selectedDept, is_active: true, gender: newMemberGender ?? undefined }]);
       setOpenMemberDialog(false);
       setNewMemberName('');
+      setNewMemberGender(null);
     }
   };
 
@@ -96,10 +98,11 @@ export default function DepartmentManagePage() {
       const ws = wb.Sheets[wsname];
       const data = XLSX.utils.sheet_to_json(ws) as any[];
 
-      // Expected Excel format: [{ "부서명": "1부", "이름": "홍길동" }, ...]
+      // Expected Excel format: [{ "부서명": "1부", "이름": "홍길동", "성별": "B" }, ...]
       const formattedData = data.map(row => ({
         department_name: row['부서명'] || row['department'],
-        member_name: row['이름'] || row['name']
+        member_name: row['이름'] || row['name'],
+        gender: row['성별'] || row['gender']
       })).filter(item => item.department_name && item.member_name);
 
       if (formattedData.length > 0) {
@@ -123,6 +126,19 @@ export default function DepartmentManagePage() {
     e.target.value = '';
   };
 
+  const handleDownloadTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    const wsData = [
+      ['부서명', '이름', '성별'],
+      ['1부', '홍길동', 'B'],
+      ['1부', '김영희', 'S'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, ws, '부서원');
+    XLSX.writeFile(wb, '부서원_일괄업로드_템플릿.xlsx');
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
@@ -134,15 +150,25 @@ export default function DepartmentManagePage() {
             부서를 생성하고 부서원을 등록하거나 엑셀로 일괄 업로드하세요.
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          component="label"
-          startIcon={<UploadFile />}
-          sx={{ borderRadius: 2, height: 48, px: 3, borderStyle: 'dashed', borderWidth: 2 }}
-        >
-          엑셀 일괄 업로드
-          <input type="file" hidden accept=".xlsx, .xls" onChange={handleFileUpload} />
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={handleDownloadTemplate}
+            sx={{ borderRadius: 2, height: 48, px: 3 }}
+          >
+            템플릿 다운로드
+          </Button>
+          <Button
+            variant="outlined"
+            component="label"
+            startIcon={<UploadFile />}
+            sx={{ borderRadius: 2, height: 48, px: 3, borderStyle: 'dashed', borderWidth: 2 }}
+          >
+            엑셀 일괄 업로드
+            <input type="file" hidden accept=".xlsx, .xls" onChange={handleFileUpload} />
+          </Button>
+        </Box>
       </Box>
 
       {loading && <Box display="flex" justifyContent="center" mb={4}><CircularProgress /></Box>}
@@ -226,6 +252,7 @@ export default function DepartmentManagePage() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ pl: 4 }}>이름</TableCell>
+                  <TableCell align="center">성별</TableCell>
                   <TableCell align="center" width={100} sx={{ pr: 4 }}>관리</TableCell>
                 </TableRow>
               </TableHead>
@@ -236,6 +263,15 @@ export default function DepartmentManagePage() {
                       <TableCell sx={{ pl: 4 }}>
                         <Typography fontWeight="500">{member.name}</Typography>
                       </TableCell>
+                      <TableCell align="center">
+                        {member.gender === 'B' ? (
+                          <Chip label="형제" size="small" color="primary" variant="outlined" />
+                        ) : member.gender === 'S' ? (
+                          <Chip label="자매" size="small" color="secondary" variant="outlined" />
+                        ) : (
+                          <Typography variant="body2" color="text.disabled">-</Typography>
+                        )}
+                      </TableCell>
                       <TableCell align="center" sx={{ pr: 4 }}>
                         <IconButton size="small" color="error" onClick={() => handleDeleteMember(member.id)}>
                           <Delete fontSize="small" />
@@ -245,7 +281,7 @@ export default function DepartmentManagePage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={2} align="center" sx={{ py: 10 }}>
+                    <TableCell colSpan={3} align="center" sx={{ py: 10 }}>
                       <Group sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
                       <Typography variant="h6" color="text.secondary" gutterBottom>부서를 선택해주세요</Typography>
                       <Typography variant="body2" color="text.disabled">좌측 목록에서 부서를 선택하면 부서원을 관리할 수 있습니다.</Typography>
@@ -254,7 +290,7 @@ export default function DepartmentManagePage() {
                 )}
                 {selectedDept && members.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={2} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={3} align="center" sx={{ py: 6 }}>
                       <Typography color="text.secondary">등록된 부서원이 없습니다.</Typography>
                     </TableCell>
                   </TableRow>
@@ -300,9 +336,22 @@ export default function DepartmentManagePage() {
             onChange={(e) => setNewMemberName(e.target.value)}
             sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
+          <Box mt={2}>
+            <Typography variant="body2" color="text.secondary" mb={1}>성별</Typography>
+            <ToggleButtonGroup
+              value={newMemberGender}
+              exclusive
+              onChange={(_e, val) => setNewMemberGender(val)}
+              size="small"
+              fullWidth
+            >
+              <ToggleButton value="B" sx={{ borderRadius: 2, flex: 1 }}>형제 (B)</ToggleButton>
+              <ToggleButton value="S" sx={{ borderRadius: 2, flex: 1 }}>자매 (S)</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={() => setOpenMemberDialog(false)} color="inherit" sx={{ borderRadius: 2 }}>취소</Button>
+          <Button onClick={() => { setOpenMemberDialog(false); setNewMemberGender(null); }} color="inherit" sx={{ borderRadius: 2 }}>취소</Button>
           <Button onClick={handleAddMember} variant="contained" color="primary" sx={{ borderRadius: 2 }}>추가하기</Button>
         </DialogActions>
       </Dialog>
