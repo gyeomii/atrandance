@@ -18,6 +18,7 @@ class DepartmentMemberDto(BaseModel):
     id: int
     name: str
     is_active: bool
+    gender: Optional[str] = None
 
 class DepartmentWithMembersDto(BaseModel):
     id: int
