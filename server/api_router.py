@@ -6,13 +6,14 @@ from datetime import date
 from .database import get_session
 from .models import (
     APIResponse, DepartmentCreate, MemberCreateRequest, DepartmentBulkUploadRequest,
-    AttendanceMarkRequest, ScheduleType, Department, Member, AttendanceRecord
+    AttendanceMarkRequest, AttendanceBulkUploadRequest, ScheduleType, Department, Member, AttendanceRecord
 )
 from .repository import AttendanceRepository
 from .service import AttendanceService
 from .dto import (
     DepartmentWithMembersDto, BulkUploadResultDto, AttendanceListDto,
-    WeeklyDashboardDto, MonthlyDashboardDto, AttendanceByDepartmentDto, RankingByDateDto
+    WeeklyDashboardDto, MonthlyDashboardDto, AttendanceByDepartmentDto, RankingByDateDto,
+    AttendanceBulkUploadResultDto
 )
 
 router = APIRouter()
@@ -56,6 +57,10 @@ def delete_member(member_id: int, service: AttendanceService = Depends(get_servi
     return {"data": None}
 
 # --- Attendance ---
+@router.post("/attendance/bulk", response_model=APIResponse[AttendanceBulkUploadResultDto])
+def bulk_upload_attendance(req: AttendanceBulkUploadRequest, service: AttendanceService = Depends(get_service)):
+    return {"data": service.bulk_upload_attendance(req)}
+
 @router.get("/attendance/{dept_id}", response_model=APIResponse[AttendanceListDto])
 def get_attendance_list(dept_id: int, schedule_type: ScheduleType, date_str: str, service: AttendanceService = Depends(get_service)):
     target_date = date.fromisoformat(date_str)

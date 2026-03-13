@@ -30,6 +30,11 @@ class BulkUploadResultDto(BaseModel):
     created_members: int
     skipped_rows: List[dict]
 
+
+class AttendanceBulkUploadResultDto(BaseModel):
+    marked_count: int
+    skipped_rows: List[dict]
+
 # --- Attendance DTOs ---
 class AttendanceMemberDto(BaseModel):
     member_id: int

@@ -91,6 +91,32 @@ export interface AttendanceRecord {
 
 export type AttendanceRecordResponse = ApiResponse<AttendanceRecord>;
 
+export interface AttendanceBulkUploadRow {
+  date: string;
+  schedule_type: ScheduleType;
+  department_name: string;
+  member_name: string;
+}
+
+export interface AttendanceBulkUploadRequest {
+  rows: AttendanceBulkUploadRow[];
+}
+
+export interface AttendanceBulkUploadSkippedRow {
+  date: string;
+  schedule_type: string;
+  department_name: string;
+  member_name: string;
+  reason: string;
+}
+
+export interface AttendanceBulkUploadResult {
+  marked_count: number;
+  skipped_rows: AttendanceBulkUploadSkippedRow[];
+}
+
+export type AttendanceBulkUploadResponse = ApiResponse<AttendanceBulkUploadResult>;
+
 export interface DepartmentStats {
   department_id: number;
   department_name: string;

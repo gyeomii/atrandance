@@ -9,6 +9,8 @@ import {
   AttendanceListResponse,
   AttendanceMarkRequest,
   AttendanceRecordResponse,
+  AttendanceBulkUploadRequest,
+  AttendanceBulkUploadResponse,
   WeeklyDashboardResponse,
   MonthlyDashboardResponse,
   AttendanceByDepartmentResponse,
@@ -91,6 +93,13 @@ export const apiService = {
 
   markAttendance: async (req: AttendanceMarkRequest): Promise<AttendanceRecordResponse> => {
     return fetchApi(`/attendance`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  bulkUploadAttendance: async (req: AttendanceBulkUploadRequest): Promise<AttendanceBulkUploadResponse> => {
+    return fetchApi(`/attendance/bulk`, {
       method: 'POST',
       body: JSON.stringify(req),
     });

@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from .models import (
     Department, Member, Schedule, AttendanceRecord, AttendanceStatus,
     ScheduleType, AttendanceMarkRequest, DepartmentCreate,
-    MemberCreateRequest, DepartmentBulkUploadRequest
+    MemberCreateRequest, DepartmentBulkUploadRequest, AttendanceBulkUploadRequest
 )
 from .repository import AttendanceRepository
 from .dto import (
@@ -14,7 +14,7 @@ from .dto import (
     AttendanceListDto, ScheduleDto, AttendanceMemberDto, DailyStatsDto,
     DepartmentStatsDto, TotalStatsDto, WeeklyDashboardDto, DateRangeDto,
     MonthlyDashboardDto, AttendanceByDepartmentDto, DailyDepartmentStatsDto,
-    DepartmentSimpleStatsDto, RankingByDateDto
+    DepartmentSimpleStatsDto, RankingByDateDto, AttendanceBulkUploadResultDto
 )
 
 class AttendanceService:
@@ -117,6 +117,54 @@ class AttendanceService:
         else:
             record = AttendanceRecord(schedule_id=req.schedule_id, member_id=req.member_id, department_id=req.department_id, status=new_status)
         return self.repo.save_attendance_record(record)
+
+    def bulk_upload_attendance(self, req: AttendanceBulkUploadRequest) -> AttendanceBulkUploadResultDto:
+        marked_count = 0
+        skipped_rows = []
+
+        existing_depts = self.repo.get_all_departments()
+        dept_cache = {d.name: d for d in existing_depts}
+        members_cache: dict[int, dict[str, Member]] = {}
+        schedule_cache: dict[tuple, Schedule] = {}
+
+        for row in req.rows:
+            dept = dept_cache.get(row.department_name)
+            if not dept:
+                skipped_rows.append({**row.model_dump(), "reason": "부서를 찾을 수 없습니다."})
+                continue
+
+            if dept.id not in members_cache:
+                members_cache[dept.id] = {m.name: m for m in self.repo.get_members_by_dept(dept.id)}
+            member = members_cache[dept.id].get(row.member_name)
+            if not member:
+                skipped_rows.append({**row.model_dump(), "reason": "부서원을 찾을 수 없습니다."})
+                continue
+
+            try:
+                target_date = date.fromisoformat(row.date)
+            except ValueError:
+                skipped_rows.append({**row.model_dump(), "reason": "날짜 형식이 올바르지 않습니다."})
+                continue
+
+            schedule_key = (row.schedule_type, target_date)
+            if schedule_key not in schedule_cache:
+                schedule = self.repo.get_schedule(row.schedule_type, target_date)
+                if not schedule:
+                    schedule = self.repo.create_schedule(Schedule(schedule_type=row.schedule_type, date=target_date))
+                schedule_cache[schedule_key] = schedule
+            else:
+                schedule = schedule_cache[schedule_key]
+
+            mark_req = AttendanceMarkRequest(
+                schedule_id=schedule.id,
+                member_id=member.id,
+                department_id=dept.id,
+                present=True
+            )
+            self.mark_attendance(mark_req)
+            marked_count += 1
+
+        return AttendanceBulkUploadResultDto(marked_count=marked_count, skipped_rows=skipped_rows)
 
     # --- Dashboards ---
     def _build_days_data(self, schedules: List[Schedule]) -> List[DailyStatsDto]:
