@@ -21,6 +21,7 @@ export interface Member {
   is_active: boolean;
   gender?: string;
   member_type?: MemberType;
+  registered_at?: string;
 }
 
 export interface DepartmentWithMembers extends Department {

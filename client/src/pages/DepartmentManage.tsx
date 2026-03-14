@@ -262,6 +262,7 @@ export default function DepartmentManagePage() {
                   <TableCell sx={{ pl: 4 }}>이름</TableCell>
                   <TableCell align="center">성별</TableCell>
                   <TableCell align="center">임원 여부</TableCell>
+                  <TableCell align="center">등록일</TableCell>
                   <TableCell align="center" width={100} sx={{ pr: 4 }}>관리</TableCell>
                 </TableRow>
               </TableHead>
@@ -288,6 +289,9 @@ export default function DepartmentManagePage() {
                           <Chip label="부서원" size="small" color="default" variant="outlined" />
                         )}
                       </TableCell>
+                      <TableCell align="center">
+                        <Typography variant="body2">{member.registered_at ?? '-'}</Typography>
+                      </TableCell>
                       <TableCell align="center" sx={{ pr: 4 }}>
                         <IconButton size="small" color="error" onClick={() => handleDeleteMember(member.id)}>
                           <Delete fontSize="small" />
@@ -297,7 +301,7 @@ export default function DepartmentManagePage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 10 }}>
+                    <TableCell colSpan={5} align="center" sx={{ py: 10 }}>
                       <Group sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
                       <Typography variant="h6" color="text.secondary" gutterBottom>부서를 선택해주세요</Typography>
                       <Typography variant="body2" color="text.disabled">좌측 목록에서 부서를 선택하면 부서원을 관리할 수 있습니다.</Typography>
@@ -306,7 +310,7 @@ export default function DepartmentManagePage() {
                 )}
                 {selectedDept && members.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
                       <Typography color="text.secondary">등록된 부서원이 없습니다.</Typography>
                     </TableCell>
                   </TableRow>
