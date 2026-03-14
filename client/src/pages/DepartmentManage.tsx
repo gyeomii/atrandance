@@ -100,13 +100,17 @@ export default function DepartmentManagePage() {
       const ws = wb.Sheets[wsname];
       const data = XLSX.utils.sheet_to_json(ws) as any[];
 
-      // Expected Excel format: [{ "부서명": "1부", "이름": "홍길동", "성별": "B", "직급": "임원" }, ...]
-      const memberTypeMap: Record<string, MemberType> = { '임원': 'OFFICER', '부서원': 'MEMBER' };
+      // Expected Excel format: [{ "부서명": "1부", "이름": "홍길동", "성별": "B", "임원 여부": "O" }, ...]
+      // 임원 여부: O (대소문자 무관) = OFFICER, X 또는 빈 값 = MEMBER
+      const toMemberType = (val: unknown): MemberType => {
+        if (typeof val === 'string' && val.toUpperCase() === 'O') return 'OFFICER';
+        return 'MEMBER';
+      };
       const formattedData = data.map(row => ({
         department_name: row['부서명'] || row['department'],
         member_name: row['이름'] || row['name'],
         gender: row['성별'] || row['gender'],
-        member_type: (memberTypeMap[row['직급']] || memberTypeMap[row['member_type']]) ?? undefined,
+        member_type: toMemberType(row['임원 여부'] ?? row['member_type']),
       })).filter(item => item.department_name && item.member_name);
 
       if (formattedData.length > 0) {
@@ -133,9 +137,9 @@ export default function DepartmentManagePage() {
   const handleDownloadTemplate = () => {
     const wb = XLSX.utils.book_new();
     const wsData = [
-      ['부서명', '이름', '성별', '직급'],
-      ['1부', '홍길동', 'B', '임원'],
-      ['1부', '김영희', 'S', '부서원'],
+      ['부서명', '이름', '성별', '임원 여부'],
+      ['1부', '홍길동', 'B', 'O'],
+      ['1부', '김영희', 'S', 'X'],
     ];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }];
@@ -257,7 +261,7 @@ export default function DepartmentManagePage() {
                 <TableRow>
                   <TableCell sx={{ pl: 4 }}>이름</TableCell>
                   <TableCell align="center">성별</TableCell>
-                  <TableCell align="center">직급</TableCell>
+                  <TableCell align="center">임원 여부</TableCell>
                   <TableCell align="center" width={100} sx={{ pr: 4 }}>관리</TableCell>
                 </TableRow>
               </TableHead>
@@ -280,10 +284,8 @@ export default function DepartmentManagePage() {
                       <TableCell align="center">
                         {member.member_type === 'OFFICER' ? (
                           <Chip label="임원" size="small" color="warning" variant="outlined" />
-                        ) : member.member_type === 'MEMBER' ? (
-                          <Chip label="부서원" size="small" color="default" variant="outlined" />
                         ) : (
-                          <Typography variant="body2" color="text.disabled">-</Typography>
+                          <Chip label="부서원" size="small" color="default" variant="outlined" />
                         )}
                       </TableCell>
                       <TableCell align="center" sx={{ pr: 4 }}>
@@ -364,7 +366,7 @@ export default function DepartmentManagePage() {
             </ToggleButtonGroup>
           </Box>
           <Box mt={2}>
-            <Typography variant="body2" color="text.secondary" mb={1}>직급</Typography>
+            <Typography variant="body2" color="text.secondary" mb={1}>임원 여부</Typography>
             <ToggleButtonGroup
               value={newMemberType}
               exclusive
@@ -372,8 +374,8 @@ export default function DepartmentManagePage() {
               size="small"
               fullWidth
             >
-              <ToggleButton value="OFFICER" sx={{ borderRadius: 2, flex: 1 }}>임원</ToggleButton>
-              <ToggleButton value="MEMBER" sx={{ borderRadius: 2, flex: 1 }}>부서원</ToggleButton>
+              <ToggleButton value="OFFICER" sx={{ borderRadius: 2, flex: 1 }}>O (임원)</ToggleButton>
+              <ToggleButton value="MEMBER" sx={{ borderRadius: 2, flex: 1 }}>X (부서원)</ToggleButton>
             </ToggleButtonGroup>
           </Box>
         </DialogContent>

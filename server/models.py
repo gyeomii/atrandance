@@ -38,7 +38,7 @@ class Member(SQLModel, table=True):
     name: str
     is_active: bool = Field(default=True)
     gender: Optional[str] = Field(default=None)
-    member_type: Optional[MemberType] = Field(default=None)
+    member_type: Optional[MemberType] = Field(default=MemberType.MEMBER)
     department: Optional[Department] = Relationship(back_populates="members")
 
 
