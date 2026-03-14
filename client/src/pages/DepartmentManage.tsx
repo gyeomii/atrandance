@@ -3,7 +3,7 @@ import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableConta
 import { Delete, Add, UploadFile, Group, Download } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { apiService } from '../apiService';
-import { DepartmentWithMembers, Member } from '../types';
+import { DepartmentWithMembers, Member, MemberType } from '../types';
 
 export default function DepartmentManagePage() {
   const [departments, setDepartments] = useState<DepartmentWithMembers[]>([]);
@@ -18,6 +18,7 @@ export default function DepartmentManagePage() {
   const [openMemberDialog, setOpenMemberDialog] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberGender, setNewMemberGender] = useState<string | null>(null);
+  const [newMemberType, setNewMemberType] = useState<MemberType | null>(null);
 
   useEffect(() => {
     fetchDepartments();
@@ -65,14 +66,15 @@ export default function DepartmentManagePage() {
 
   const handleAddMember = async () => {
     if (!newMemberName.trim() || !selectedDept) return;
-    const res = await apiService.addMember(selectedDept, { name: newMemberName, gender: newMemberGender ?? undefined });
+    const res = await apiService.addMember(selectedDept, { name: newMemberName, gender: newMemberGender ?? undefined, member_type: newMemberType ?? undefined });
     if (res.success) {
       fetchDepartments();
       // Update local members list for immediate UI feedback
-      setMembers([...members, { id: -Date.now(), name: newMemberName, department_id: selectedDept, is_active: true, gender: newMemberGender ?? undefined }]);
+      setMembers([...members, { id: -Date.now(), name: newMemberName, department_id: selectedDept, is_active: true, gender: newMemberGender ?? undefined, member_type: newMemberType ?? undefined }]);
       setOpenMemberDialog(false);
       setNewMemberName('');
       setNewMemberGender(null);
+      setNewMemberType(null);
     }
   };
 
@@ -98,11 +100,13 @@ export default function DepartmentManagePage() {
       const ws = wb.Sheets[wsname];
       const data = XLSX.utils.sheet_to_json(ws) as any[];
 
-      // Expected Excel format: [{ "부서명": "1부", "이름": "홍길동", "성별": "B" }, ...]
+      // Expected Excel format: [{ "부서명": "1부", "이름": "홍길동", "성별": "B", "직급": "임원" }, ...]
+      const memberTypeMap: Record<string, MemberType> = { '임원': 'OFFICER', '부서원': 'MEMBER' };
       const formattedData = data.map(row => ({
         department_name: row['부서명'] || row['department'],
         member_name: row['이름'] || row['name'],
-        gender: row['성별'] || row['gender']
+        gender: row['성별'] || row['gender'],
+        member_type: (memberTypeMap[row['직급']] || memberTypeMap[row['member_type']]) ?? undefined,
       })).filter(item => item.department_name && item.member_name);
 
       if (formattedData.length > 0) {
@@ -129,12 +133,12 @@ export default function DepartmentManagePage() {
   const handleDownloadTemplate = () => {
     const wb = XLSX.utils.book_new();
     const wsData = [
-      ['부서명', '이름', '성별'],
-      ['1부', '홍길동', 'B'],
-      ['1부', '김영희', 'S'],
+      ['부서명', '이름', '성별', '직급'],
+      ['1부', '홍길동', 'B', '임원'],
+      ['1부', '김영희', 'S', '부서원'],
     ];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 10 }];
+    ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }];
     XLSX.utils.book_append_sheet(wb, ws, '부서원');
     XLSX.writeFile(wb, '부서원_일괄업로드_템플릿.xlsx');
   };
@@ -253,6 +257,7 @@ export default function DepartmentManagePage() {
                 <TableRow>
                   <TableCell sx={{ pl: 4 }}>이름</TableCell>
                   <TableCell align="center">성별</TableCell>
+                  <TableCell align="center">직급</TableCell>
                   <TableCell align="center" width={100} sx={{ pr: 4 }}>관리</TableCell>
                 </TableRow>
               </TableHead>
@@ -272,6 +277,15 @@ export default function DepartmentManagePage() {
                           <Typography variant="body2" color="text.disabled">-</Typography>
                         )}
                       </TableCell>
+                      <TableCell align="center">
+                        {member.member_type === 'OFFICER' ? (
+                          <Chip label="임원" size="small" color="warning" variant="outlined" />
+                        ) : member.member_type === 'MEMBER' ? (
+                          <Chip label="부서원" size="small" color="default" variant="outlined" />
+                        ) : (
+                          <Typography variant="body2" color="text.disabled">-</Typography>
+                        )}
+                      </TableCell>
                       <TableCell align="center" sx={{ pr: 4 }}>
                         <IconButton size="small" color="error" onClick={() => handleDeleteMember(member.id)}>
                           <Delete fontSize="small" />
@@ -281,7 +295,7 @@ export default function DepartmentManagePage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} align="center" sx={{ py: 10 }}>
+                    <TableCell colSpan={4} align="center" sx={{ py: 10 }}>
                       <Group sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
                       <Typography variant="h6" color="text.secondary" gutterBottom>부서를 선택해주세요</Typography>
                       <Typography variant="body2" color="text.disabled">좌측 목록에서 부서를 선택하면 부서원을 관리할 수 있습니다.</Typography>
@@ -290,7 +304,7 @@ export default function DepartmentManagePage() {
                 )}
                 {selectedDept && members.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
                       <Typography color="text.secondary">등록된 부서원이 없습니다.</Typography>
                     </TableCell>
                   </TableRow>
@@ -349,9 +363,22 @@ export default function DepartmentManagePage() {
               <ToggleButton value="S" sx={{ borderRadius: 2, flex: 1 }}>자매 (S)</ToggleButton>
             </ToggleButtonGroup>
           </Box>
+          <Box mt={2}>
+            <Typography variant="body2" color="text.secondary" mb={1}>직급</Typography>
+            <ToggleButtonGroup
+              value={newMemberType}
+              exclusive
+              onChange={(_e, val) => setNewMemberType(val)}
+              size="small"
+              fullWidth
+            >
+              <ToggleButton value="OFFICER" sx={{ borderRadius: 2, flex: 1 }}>임원</ToggleButton>
+              <ToggleButton value="MEMBER" sx={{ borderRadius: 2, flex: 1 }}>부서원</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={() => { setOpenMemberDialog(false); setNewMemberGender(null); }} color="inherit" sx={{ borderRadius: 2 }}>취소</Button>
+          <Button onClick={() => { setOpenMemberDialog(false); setNewMemberGender(null); setNewMemberType(null); }} color="inherit" sx={{ borderRadius: 2 }}>취소</Button>
           <Button onClick={handleAddMember} variant="contained" color="primary" sx={{ borderRadius: 2 }}>추가하기</Button>
         </DialogActions>
       </Dialog>

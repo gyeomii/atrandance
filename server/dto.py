@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
-from .models import ScheduleType
+from .models import MemberType, ScheduleType
 
 # --- Common DTOs ---
 class DateRangeDto(BaseModel):
@@ -19,6 +19,7 @@ class DepartmentMemberDto(BaseModel):
     name: str
     is_active: bool
     gender: Optional[str] = None
+    member_type: Optional[MemberType] = None
 
 class DepartmentWithMembersDto(BaseModel):
     id: int
