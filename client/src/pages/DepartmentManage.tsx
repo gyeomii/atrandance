@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, CircularProgress, Chip, Avatar, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { Delete, Add, UploadFile, Group, Download } from '@mui/icons-material';
+import { Delete, Add, UploadFile, Group, Download, FileDownload } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { apiService } from '../apiService';
 import { DepartmentWithMembers, Member, MemberType } from '../types';
@@ -147,6 +147,152 @@ export default function DepartmentManagePage() {
     XLSX.writeFile(wb, '부서원_일괄업로드_템플릿.xlsx');
   };
 
+  const handleExportMembers = () => {
+    if (departments.length === 0) {
+      alert('내보낼 부서원 데이터가 없습니다.');
+      return;
+    }
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // For each department, group members by type and gender
+    const deptData = departments.map(dept => ({
+      name: dept.name,
+      officers_B: (dept.members || []).filter(m => m.member_type === 'OFFICER' && m.gender === 'B').map(m => m.name),
+      officers_S: (dept.members || []).filter(m => m.member_type === 'OFFICER' && m.gender === 'S').map(m => m.name),
+      members_B: (dept.members || []).filter(m => m.member_type !== 'OFFICER' && m.gender === 'B').map(m => m.name),
+      members_S: (dept.members || []).filter(m => m.member_type !== 'OFFICER' && m.gender === 'S').map(m => m.name),
+    }));
+
+    const maxOfficerRows = Math.max(...deptData.map(d => Math.max(d.officers_B.length, d.officers_S.length)), 1);
+    const maxMemberRows = Math.max(...deptData.map(d => Math.max(d.members_B.length, d.members_S.length)), 1);
+
+    const numDepts = departments.length;
+    // Column layout: [empty, 구분, dept1-형제, dept1-자매, dept2-형제, ..., 합계]
+    const totalCols = 2 + numDepts * 2 + 1;
+
+    const wsData: (string | number | null)[][] = [];
+
+    // Row 1: empty
+    wsData.push(Array(totalCols).fill(null));
+
+    // Row 2: Title
+    const titleRow: (string | number | null)[] = Array(totalCols).fill(null);
+    titleRow[1] = '청년회 부서원 명단';
+    wsData.push(titleRow);
+
+    // Row 3: Date
+    const dateRow: (string | number | null)[] = Array(totalCols).fill(null);
+    dateRow[1] = todayStr;
+    wsData.push(dateRow);
+
+    // Row 4: empty
+    wsData.push(Array(totalCols).fill(null));
+
+    // Row 5: Department name headers
+    const deptHeaderRow: (string | number | null)[] = Array(totalCols).fill(null);
+    deptHeaderRow[1] = '구분';
+    departments.forEach((dept, i) => {
+      deptHeaderRow[2 + i * 2] = dept.name;
+    });
+    deptHeaderRow[totalCols - 1] = '합계';
+    wsData.push(deptHeaderRow);
+
+    // Row 6: 형제/자매 sub-headers
+    const genderHeaderRow: (string | number | null)[] = Array(totalCols).fill(null);
+    departments.forEach((_dept, i) => {
+      genderHeaderRow[2 + i * 2] = '형제';
+      genderHeaderRow[2 + i * 2 + 1] = '자매';
+    });
+    wsData.push(genderHeaderRow);
+
+    // Row 7: empty
+    wsData.push(Array(totalCols).fill(null));
+
+    // Officer rows (부서임원)
+    for (let i = 0; i < maxOfficerRows; i++) {
+      const row: (string | number | null)[] = Array(totalCols).fill(null);
+      if (i === 0) row[1] = '부서임원';
+      deptData.forEach((d, di) => {
+        row[2 + di * 2] = d.officers_B[i] ?? null;
+        row[2 + di * 2 + 1] = d.officers_S[i] ?? null;
+      });
+      wsData.push(row);
+    }
+
+    // Officer count row (소계)
+    const officerCountRow: (string | number | null)[] = Array(totalCols).fill(null);
+    officerCountRow[1] = '소계';
+    let officerTotal = 0;
+    deptData.forEach((d, i) => {
+      const bCount = d.officers_B.length;
+      const sCount = d.officers_S.length;
+      officerCountRow[2 + i * 2] = bCount;
+      officerCountRow[2 + i * 2 + 1] = sCount;
+      officerTotal += bCount + sCount;
+    });
+    officerCountRow[totalCols - 1] = officerTotal;
+    wsData.push(officerCountRow);
+
+    // Empty row
+    wsData.push(Array(totalCols).fill(null));
+
+    // Member rows (부서원)
+    for (let i = 0; i < maxMemberRows; i++) {
+      const row: (string | number | null)[] = Array(totalCols).fill(null);
+      if (i === 0) row[1] = '부서원';
+      deptData.forEach((d, di) => {
+        row[2 + di * 2] = d.members_B[i] ?? null;
+        row[2 + di * 2 + 1] = d.members_S[i] ?? null;
+      });
+      wsData.push(row);
+    }
+
+    // Member count row (소계)
+    const memberCountRow: (string | number | null)[] = Array(totalCols).fill(null);
+    memberCountRow[1] = '소계';
+    let memberTotal = 0;
+    deptData.forEach((d, i) => {
+      const bCount = d.members_B.length;
+      const sCount = d.members_S.length;
+      memberCountRow[2 + i * 2] = bCount;
+      memberCountRow[2 + i * 2 + 1] = sCount;
+      memberTotal += bCount + sCount;
+    });
+    memberCountRow[totalCols - 1] = memberTotal;
+    wsData.push(memberCountRow);
+
+    // Empty row
+    wsData.push(Array(totalCols).fill(null));
+
+    // Grand total row (합계)
+    const totalRow: (string | number | null)[] = Array(totalCols).fill(null);
+    totalRow[1] = '합계';
+    let grandTotal = 0;
+    deptData.forEach((d, i) => {
+      const bTotal = d.officers_B.length + d.members_B.length;
+      const sTotal = d.officers_S.length + d.members_S.length;
+      totalRow[2 + i * 2] = bTotal;
+      totalRow[2 + i * 2 + 1] = sTotal;
+      grandTotal += bTotal + sTotal;
+    });
+    totalRow[totalCols - 1] = grandTotal;
+    wsData.push(totalRow);
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths
+    const colWidths: { wch: number }[] = [{ wch: 4 }, { wch: 12 }];
+    departments.forEach(() => { colWidths.push({ wch: 10 }, { wch: 10 }); });
+    colWidths.push({ wch: 8 });
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '부서원명단');
+    XLSX.writeFile(wb, `부서원_명단_${todayStr}.xlsx`);
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
@@ -166,6 +312,14 @@ export default function DepartmentManagePage() {
             sx={{ borderRadius: 2, height: 48, px: 3 }}
           >
             템플릿 다운로드
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownload />}
+            onClick={handleExportMembers}
+            sx={{ borderRadius: 2, height: 48, px: 3 }}
+          >
+            부서원 내보내기
           </Button>
           <Button
             variant="outlined"
