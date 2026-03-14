@@ -1,4 +1,5 @@
 export type ScheduleType = 'WED' | 'SAT' | 'SUN';
+export type MemberType = 'OFFICER' | 'MEMBER';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -19,6 +20,8 @@ export interface Member {
   name: string;
   is_active: boolean;
   gender?: string;
+  member_type?: MemberType;
+  registered_at?: string;
 }
 
 export interface DepartmentWithMembers extends Department {
@@ -31,6 +34,7 @@ export interface DepartmentBulkUploadRow {
   department_name: string;
   member_name: string;
   gender?: string;
+  member_type?: MemberType;
 }
 
 export interface DepartmentBulkUploadRequest {
@@ -49,6 +53,7 @@ export type DepartmentBulkUploadResponse = ApiResponse<DepartmentBulkUploadResul
 export interface MemberCreateRequest {
   name: string;
   gender?: string;
+  member_type?: MemberType;
 }
 
 export type MemberResponse = ApiResponse<Member>;

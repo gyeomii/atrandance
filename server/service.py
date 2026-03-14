@@ -28,7 +28,7 @@ class AttendanceService:
         for d in departments:
             members = None
             if include_members:
-                members = [DepartmentMemberDto(id=m.id, name=m.name, is_active=m.is_active, gender=m.gender) for m in d.members]
+                members = [DepartmentMemberDto(id=m.id, name=m.name, is_active=m.is_active, gender=m.gender, member_type=m.member_type, registered_at=m.registered_at) for m in d.members]
             result.append(DepartmentWithMembersDto(id=d.id, name=d.name, members=members))
         return result
 
@@ -61,7 +61,9 @@ class AttendanceService:
                     skipped_rows.append(row.model_dump())
                     continue
 
-            new_member = Member(department_id=dept.id, name=row.member_name, gender=row.gender)
+            existing = self.repo.get_member_by_name_and_dept(dept.id, row.member_name)
+            registered_at = existing.registered_at if existing else date.today()
+            new_member = Member(department_id=dept.id, name=row.member_name, gender=row.gender, member_type=row.member_type, registered_at=registered_at)
             self.repo.save_member(new_member)
             created_members += 1
 
@@ -78,7 +80,7 @@ class AttendanceService:
     def add_member(self, dept_id: int, req: MemberCreateRequest) -> Member:
         if not self.repo.get_department_by_id(dept_id):
             raise HTTPException(status_code=404, detail="Department not found")
-        return self.repo.save_member(Member(department_id=dept_id, name=req.name, gender=req.gender))
+        return self.repo.save_member(Member(department_id=dept_id, name=req.name, gender=req.gender, member_type=req.member_type))
 
     def delete_member(self, member_id: int):
         member = self.repo.get_member_by_id(member_id)

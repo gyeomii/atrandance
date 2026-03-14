@@ -35,6 +35,11 @@ class AttendanceRepository:
     def get_member_by_id(self, member_id: int) -> Optional[Member]:
         return self.session.get(Member, member_id)
 
+    def get_member_by_name_and_dept(self, dept_id: int, name: str) -> Optional[Member]:
+        return self.session.exec(
+            select(Member).where(Member.department_id == dept_id, Member.name == name)
+        ).first()
+
     def save_member(self, member: Member) -> Member:
         self.session.add(member)
         self.session.commit()

@@ -18,6 +18,11 @@ class AttendanceStatus(str, Enum):
     ABSENT = "ABSENT"
 
 
+class MemberType(str, Enum):
+    OFFICER = "OFFICER"
+    MEMBER = "MEMBER"
+
+
 # --- SQLModel Entities (Tables) ---
 class Department(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -33,6 +38,8 @@ class Member(SQLModel, table=True):
     name: str
     is_active: bool = Field(default=True)
     gender: Optional[str] = Field(default=None)
+    member_type: Optional[MemberType] = Field(default=MemberType.MEMBER)
+    registered_at: date = Field(default_factory=date.today)
     department: Optional[Department] = Relationship(back_populates="members")
 
 
@@ -68,12 +75,14 @@ class DepartmentCreate(BaseModel):
 class MemberCreateRequest(BaseModel):
     name: str
     gender: Optional[str] = None
+    member_type: Optional[MemberType] = None
 
 
 class DepartmentBulkRow(BaseModel):
     department_name: str
     member_name: str
     gender: Optional[str] = None
+    member_type: Optional[MemberType] = None
 
 
 class DepartmentBulkUploadRequest(BaseModel):
